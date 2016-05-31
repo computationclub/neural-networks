@@ -1,4 +1,5 @@
 require 'yaml'
+require 'dual_number'
 
 class NeuralNetwork
   class WrongNumberOfInputsError < RuntimeError; end
@@ -138,7 +139,7 @@ class NeuralNetwork
   end
 
   def derivative_of_activation_function(x)
-    1 - Math.tanh(x)**2
+    activation_function(DualNumber(x, 1)).dual
   end
 
   # Returns an array of inputs for the `compute` method, with the value of the
