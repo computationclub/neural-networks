@@ -1,6 +1,8 @@
 require 'yaml'
 
 class NeuralNetwork
+  class WrongNumberOfInputsError < RuntimeError; end
+
   attr_reader :number_of_inputs, :number_of_outputs, :number_of_medial_neurons,
               :learning_rate, :bias_neuron, :target_proc, :input_proc
 
@@ -47,7 +49,9 @@ class NeuralNetwork
   # input neurons (INCLUDING any bias neuron). To add the bias neuron value
   # automatically, use the result of the `inputs_with_bias` method below.
   def compute(*inputs)
-    raise "Expected #{number_of_inputs} inputs, got #{inputs.length}" if inputs.length != number_of_inputs
+    if inputs.length != number_of_inputs
+      raise WrongNumberOfInputsError, "Expected #{number_of_inputs} inputs, got #{inputs.length}"
+    end
 
     # Stash these in instance variables so we can use them for training later
     @medin = []
@@ -123,7 +127,8 @@ class NeuralNetwork
     if @average_error.nil?
       puts "\nAverage error is now #{new_average_error}"
     else
-      puts "\nAverage error is #{(@average_error - new_average_error) > 0 ? 'BETTER' : 'WORSE'} (#{@average_error} => #{new_average_error})"
+      better_or_worse = (@average_error - new_average_error) > 0 ? 'BETTER' : 'WORSE'
+      puts "\nAverage error is #{better_or_worse} (#{@average_error} => #{new_average_error})"
     end
     @average_error = new_average_error
   end
@@ -154,23 +159,59 @@ if __FILE__ == $0
   # Code that's useful to actually run and train the network. Options are
   # available to use different network procs, and to load/store networks from
   # different files. This is useful to compare performance of, say, different
-  # numbers of medial neurons.
+  # numbers of medial neurons, or the presence/different values for the bias
+  # neuron.
+  #
+  # For example:
+  #
+  #    $ ruby net.rb -n polar -t 10000
+  #    [10000] error: 0.0197513783712034125
+  #    Average error is BETTER (0.018645820043898788 => 0.018576975078352542)
+  #
+  # ... will create a new neural network to solve the polar problem, train it
+  # for 10,000 iterations, and then save the resulting network in `polar.yml`.
+  # It also outputs the error as the training runs, and at the end, a summary
+  # of the change in error between the start of training and the end of
+  # training.
+  #
+  # If you run this command again, it will load the network from that file, and
+  # train it for an additional 10,000 iterations.
+  #
+  # To test the network, run it without the `-t` argument and with the
+  # coordinates instead:
+  #
+  #    $ ruby net.rb -n polar 0.5 1.25
+  #    [0.5, 1.25] => [0.16715159257595702, 0.46906771983462636]
+  #          expected [0.15766118119763434, 0.4744923096777931]
+  #        difference [-0.009490411378322683, 0.005424589843166738]
+  #
+  # ... will output the result of the network, along with the actual values
+  # and a summary of the errors
+
   require 'optparse'
 
-  procs = {}
-  procs['addition'] = {
-    input_proc: -> { [rand * 10, rand * 10] },
-    target_proc: -> (x, y) { [x + y] }
-  }
-  procs['polar'] = {
-    input_proc: -> { [rand, rand * 2 * Math::PI] },
-    target_proc: -> (r, a) { Complex.polar(r, a).rectangular },
+  # Computation configuration for various different applications. Remember that
+  # every proc needs to return an Array.
+  procs = {
+    'addition' => {
+      input_proc: -> { [rand * 10, rand * 10] },
+      target_proc: -> (x, y) { [x + y] }
+    },
+    'integer-addition' => {
+      input_proc: -> { [rand(10), rand(10)] },
+      target_proc: -> (x, y) { [x + y] }
+    },
+    'polar' => {
+      input_proc: -> { [rand, rand * 2 * Math::PI] },
+      target_proc: -> (r, a) { Complex.polar(r, a).rectangular },
+    }
   }
 
-  options = {}
+  $name = 'polar'
+  options = procs[$name]
 
   OptionParser.new do |opts|
-    opts.banner = "Usage: example.rb [options]"
+    opts.banner = "Usage: #{__FILE__} [options]"
     opts.on("-h", "--help", "Show this message") { puts opts; exit }
     opts.on("-t", "--train [ITERATIONS]", Integer) { |i| $iterations = i }
     opts.on("-n", "--name [NAME]", String) { |n| $name = n; options.merge!(procs[n]) }
@@ -192,15 +233,19 @@ if __FILE__ == $0
   if $iterations
     $network.train($iterations)
   else
-    inputs = ARGV.map(&:to_f)
-    result = $network.compute(*$network.inputs_with_bias(inputs))
-    expected = $network.target_proc.call(*inputs)
-    error = result.zip(expected).map { |(r,e)| e - r }
+    begin
+      inputs = ARGV.map(&:to_f)
+      result = $network.compute(*$network.inputs_with_bias(inputs))
+      expected = $network.target_proc.call(*inputs)
+      error = result.zip(expected).map { |(r,e)| e - r }
 
-    input_string = "#{inputs.inspect} => "
-    result = "#{input_string}#{result.inspect}"
-    expected = "#{' ' * (input_string.length - 9)}expected #{expected.inspect}"
-    error = "#{' ' * (input_string.length - 11)}difference #{error.inspect}"
-    puts [result, expected, error].join("\n")
+      input_string = "#{inputs.inspect} => "
+      result = "#{input_string}#{result.inspect}"
+      expected = "#{' ' * (input_string.length - 9)}expected #{expected.inspect}"
+      error = "#{' ' * (input_string.length - 11)}difference #{error.inspect}"
+      puts [result, expected, error].join("\n")
+    rescue NeuralNetwork::WrongNumberOfInputsError => e
+      puts "#{e.message}; maybe you need to provide some inputs as arguments?"
+    end
   end
 end
