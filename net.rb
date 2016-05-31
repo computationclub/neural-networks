@@ -64,7 +64,7 @@ class NeuralNetwork
       number_of_inputs.times do |j|
         @medin[i] += @synone[j][i] * inputs[j]
       end
-      @medout[i] = Math.tanh(@medin[i])
+      @medout[i] = activation_function(@medin[i])
     end
 
     number_of_outputs.times do |i|
@@ -106,7 +106,7 @@ class NeuralNetwork
         number_of_outputs.times do |j|
           sigma[i] = sigma[i] + errors[j] * @syntwo[i][j]
         end
-        sigmoid[i] = 1 - Math.tanh(@medin[i])**2
+        sigmoid[i] = derivative_of_activation_function(@medin[i])
       end
 
       number_of_inputs.times do |i|
@@ -131,6 +131,14 @@ class NeuralNetwork
       puts "\nAverage error is #{better_or_worse} (#{@average_error} => #{new_average_error})"
     end
     @average_error = new_average_error
+  end
+
+  def activation_function(x)
+    Math.tanh(x)
+  end
+
+  def derivative_of_activation_function(x)
+    1 - Math.tanh(x)**2
   end
 
   # Returns an array of inputs for the `compute` method, with the value of the
