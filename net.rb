@@ -106,7 +106,7 @@ class NeuralNetwork
         number_of_outputs.times do |j|
           sigma[i] = sigma[i] + errors[j] * @syntwo[i][j]
         end
-        sigmoid[i] = 1 - @medout[i]**2
+        sigmoid[i] = 1 - Math.tanh(@medin[i])**2
       end
 
       number_of_inputs.times do |i|
