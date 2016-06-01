@@ -172,6 +172,10 @@ if __FILE__ == $0
     'polar' => {
       input_proc: -> { [rand, rand * 2 * Math::PI] },
       target_proc: -> (r, a) { Complex.polar(r, a).rectangular },
+    },
+    'binary' => {
+      input_proc: -> { [rand(8)] },
+      target_proc: -> (n) { n.to_i.to_s(2).rjust(3,'0').chars.map(&:to_i) }
     }
   }
 
