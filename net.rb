@@ -208,9 +208,10 @@ if __FILE__ == $0
       error = result.zip(expected).map { |(r,e)| e - r }
 
       input_string = "#{inputs.inspect} => "
+      pad_length = [13, input_string.length].min
       result = "#{input_string}#{result.inspect}"
-      expected = "#{' ' * (input_string.length - 9)}expected #{expected.inspect}"
-      error = "#{' ' * (input_string.length - 11)}difference #{error.inspect}"
+      expected = "#{' ' * pad_length}expected #{expected.inspect}"
+      error = "#{' ' * pad_length}difference #{error.inspect}"
       puts [result, expected, error].join("\n")
     rescue NeuralNetwork::WrongNumberOfInputsError => e
       puts "#{e.message}; maybe you need to provide some inputs as arguments?"
