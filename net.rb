@@ -125,10 +125,10 @@ class NeuralNetwork
 
     new_average_error = all_errors.inject(:+) / all_errors.length
     if @average_error.nil?
-      puts "\nAverage error is now #{new_average_error}"
+      puts "\rAverage error is now #{new_average_error}"
     else
       better_or_worse = (@average_error - new_average_error) > 0 ? 'BETTER' : 'WORSE'
-      puts "\nAverage error is #{better_or_worse} (#{@average_error} => #{new_average_error})"
+      puts "\rAverage error is #{better_or_worse} (#{@average_error} => #{new_average_error})"
     end
     @average_error = new_average_error
   end
